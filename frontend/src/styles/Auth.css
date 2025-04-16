@@ -1,0 +1,145 @@
+/* Common styles for Login and Signup pages */
+.login-container,
+.signup-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+
+.login-content,
+.signup-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+/* Keep login form size constrained */
+.login-content {
+  max-width: 28rem;
+}
+
+/* Allow signup form to be wider */
+.signup-content {
+  max-width: 72rem; /* This matches Tailwind's max-w-6xl */
+}
+
+.login-title,
+.signup-title {
+  color: #2d3748;
+  font-weight: 800;
+}
+
+.login-subtitle,
+.signup-subtitle {
+  color: #4a5568;
+}
+
+.login-input,
+.signup-input {
+  background: white;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.login-input:focus,
+.signup-input:focus {
+  border-color: #6b46c1;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.2);
+  outline: none;
+}
+
+.login-button,
+.signup-button {
+  background: linear-gradient(135deg, #6b46c1 0%, #553c9a 100%);
+  transition: all 0.2s;
+}
+
+.login-button:hover,
+.signup-button:hover {
+  background: linear-gradient(135deg, #553c9a 0%, #44337a 100%);
+  transform: translateY(-1px);
+}
+
+/* Custom checkbox styles */
+.custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox:checked {
+  background-color: #6b46c1;
+  border-color: #6b46c1;
+}
+
+.custom-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.custom-checkbox:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.2);
+}
+
+.custom-checkbox:disabled {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* Improve input styling for signup form */
+.signup-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  padding-left: 3rem; /* This will ensure consistent padding for the icon */
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.signup-input:focus {
+  border-color: #6b46c1;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.2);
+  outline: none;
+}
+
+.signup-input::placeholder {
+  color: #a0aec0;
+}
+
+/* Improve date input specifically */
+.signup-input[type="date"] {
+  padding-right: 1rem;
+  cursor: pointer;
+}
+
+/* Improve select input */
+.signup-input[type="select"] {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
