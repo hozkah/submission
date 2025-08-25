@@ -207,11 +207,22 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    // Check if password is stored in plain text (not hashed)
+    const isPlainText = !user.password.startsWith('$2');
+    
+    if (isPlainText) {
+      // Hash the plain text password and update the database
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      if (role === "manager") {
+        await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, user.id]);
+      } else {
+        await db.query("UPDATE babysitters SET password = ? WHERE id = ?", [hashedPassword, user.id]);
+      }
+      user.password = hashedPassword;
+    }
+
     // Verify password
     console.log("Attempting password verification for:", role);
-    console.log("Input password:", password);
-    console.log("Stored hashed password:", user.password);
-
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log("Password validation result:", isValidPassword);
 
@@ -231,17 +242,23 @@ const login = async (req, res) => {
       ]);
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id, role }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+    // Generate JWT token with consistent role
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        role: role,
+        email: user.email 
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "24h" }
+    );
 
     res.json({
       token,
       user: {
         id: user.id,
         email: user.email,
-        role,
+        role: role,
         firstName: user.first_name || user.username,
         lastName: user.last_name || "",
       },

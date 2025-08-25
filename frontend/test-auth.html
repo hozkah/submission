@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    
+    <div>
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Email" value="nabasaisaac16@gmail.com"><br>
+        <input type="password" id="password" placeholder="Password" value="nabasaisaac16@gmail.com"><br>
+        <button onclick="login()">Login</button>
+    </div>
+    
+    <div>
+        <h2>Test API Calls</h2>
+        <button onclick="testCreateManager()">Test Create Manager</button>
+        <button onclick="testCreateBabysitter()">Test Create Babysitter</button>
+        <button onclick="testListManagers()">Test List Managers</button>
+    </div>
+    
+    <div id="output"></div>
+
+    <script>
+        function log(message) {
+            document.getElementById('output').innerHTML += '<p>' + message + '</p>';
+        }
+
+        async function login() {
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                log('Attempting login...');
+                const response = await axios.post('http://localhost:5000/api/auth/login', {
+                    email,
+                    password
+                });
+                
+                log('Login successful! Token: ' + (response.data.token ? 'Yes' : 'No'));
+                localStorage.setItem('token', response.data.token);
+                log('Token stored in localStorage');
+                
+            } catch (error) {
+                log('Login failed: ' + error.message);
+                if (error.response) {
+                    log('Response data: ' + JSON.stringify(error.response.data));
+                }
+            }
+        }
+
+        async function testCreateManager() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    log('No token found. Please login first.');
+                    return;
+                }
+                
+                log('Testing manager creation...');
+                const response = await axios.post('http://localhost:5000/api/babysitters/manager', {
+                    firstName: 'Test',
+                    lastName: 'Manager',
+                    email: 'testmanager2@test.com',
+                    username: 'testmanager2',
+                    password: 'password123'
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                log('Manager created successfully: ' + JSON.stringify(response.data));
+                
+            } catch (error) {
+                log('Manager creation failed: ' + error.message);
+                if (error.response) {
+                    log('Response data: ' + JSON.stringify(error.response.data));
+                }
+            }
+        }
+
+        async function testCreateBabysitter() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    log('No token found. Please login first.');
+                    return;
+                }
+                
+                log('Testing babysitter creation...');
+                const response = await axios.post('http://localhost:5000/api/babysitters', {
+                    firstName: 'Test',
+                    lastName: 'Babysitter',
+                    email: 'testbabysitter2@test.com',
+                    password: 'password123',
+                    phoneNumber: '1234567890',
+                    nin: '1234567890123457',
+                    dateOfBirth: '1995-01-01',
+                    nextOfKin: {
+                        name: 'Test Kin',
+                        phoneNumber: '0987654321',
+                        relationship: 'spouse'
+                    }
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                log('Babysitter created successfully: ' + JSON.stringify(response.data));
+                
+            } catch (error) {
+                log('Babysitter creation failed: ' + error.message);
+                if (error.response) {
+                    log('Response data: ' + JSON.stringify(error.response.data));
+                }
+            }
+        }
+
+        async function testListManagers() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    log('No token found. Please login first.');
+                    return;
+                }
+                
+                log('Testing manager listing...');
+                const response = await axios.get('http://localhost:5000/api/babysitters/users', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                log('Managers listed successfully: ' + JSON.stringify(response.data));
+                
+            } catch (error) {
+                log('Manager listing failed: ' + error.message);
+                if (error.response) {
+                    log('Response data: ' + JSON.stringify(error.response.data));
+                }
+            }
+        }
+    </script>
+</body>
+</html>

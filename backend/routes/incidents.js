@@ -30,7 +30,7 @@ router.post(
     body("target").isIn(["parent", "manager"]).withMessage("Invalid target"),
   ],
   async (req, res) => {
-    console.log(req.body);
+    console.log("Creating incident report:", req.body);
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -58,6 +58,7 @@ router.post(
       }
 
       const child = childRows[0];
+      console.log("Found child:", child.full_name);
 
       // Insert incident report
       const [result] = await db.execute(
@@ -66,6 +67,9 @@ router.post(
          VALUES (?, ?, ?, ?, ?)`,
         [child_id, incident_type, description, req.user.id, target]
       );
+
+      console.log("Incident report created with ID:", result.insertId);
+      console.log("Target:", target, "User role:", req.user.role);
 
       // Send email notification if target is parent
       if (target === "parent" && child.parent_email) {
@@ -200,32 +204,79 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+// Test endpoint to check database structure
+router.get("/test/db", auth, async (req, res) => {
+  try {
+    console.log("Testing database structure...");
+    
+    // Check if incident_report table exists
+    const [tables] = await db.query("SHOW TABLES LIKE 'incident_report'");
+    console.log("incident_report table exists:", tables.length > 0);
+    
+    if (tables.length === 0) {
+      return res.status(500).json({ 
+        message: "incident_report table does not exist",
+        availableTables: await db.query("SHOW TABLES")
+      });
+    }
+    
+    // Check table structure
+    const [columns] = await db.query("DESCRIBE incident_report");
+    console.log("incident_report table structure:", columns);
+    
+    // Check if there are any records
+    const [count] = await db.query("SELECT COUNT(*) as count FROM incident_report");
+    console.log("Total incident reports:", count[0].count);
+    
+    // Check manager incidents
+    const [managerCount] = await db.query("SELECT COUNT(*) as count FROM incident_report WHERE target = 'manager'");
+    console.log("Manager incidents:", managerCount[0].count);
+    
+    // Get sample data
+    const [sample] = await db.query("SELECT * FROM incident_report LIMIT 5");
+    console.log("Sample incident reports:", sample);
+    
+    res.json({
+      tableExists: true,
+      structure: columns,
+      totalCount: count[0].count,
+      managerCount: managerCount[0].count,
+      sample: sample
+    });
+  } catch (error) {
+    console.error("Database test error:", error);
+    res.status(500).json({
+      message: "Database test failed",
+      error: error.message
+    });
+  }
+});
+
 // Get notifications for manager
 router.get("/notifications", [auth, authorize("manager")], async (req, res) => {
   console.log("Fetching notifications for user:", req.user.id);
   try {
-    // First verify the database connection
-    const [tables] = await db.query("SHOW TABLES");
-    console.log(
-      "Available tables:",
-      tables.map((t) => t.Tables_in_daystar_daycare)
-    );
-
-    // Verify the required tables exist
-    const requiredTables = ["incident_report", "children", "babysitters"];
-    const missingTables = requiredTables.filter(
-      (table) => !tables.some((t) => t.Tables_in_daystar_daycare === table)
-    );
-
-    if (missingTables.length > 0) {
-      console.error("Missing required tables:", missingTables);
-      return res.status(500).json({
-        message: "Database configuration error",
-        error: `Missing required tables: ${missingTables.join(", ")}`,
-      });
+    const { babysitterName, childName } = req.query;
+    
+    let whereClause = "WHERE ir.target = 'manager'";
+    const params = [];
+    
+    // Add babysitter name filter
+    if (babysitterName && babysitterName.trim()) {
+      whereClause += " AND (b.first_name LIKE ? OR b.last_name LIKE ? OR CONCAT(b.first_name, ' ', b.last_name) LIKE ?)";
+      const searchTerm = `%${babysitterName.trim()}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
     }
-
-    // Get all notifications with child and reporter names
+    
+    // Add child name filter
+    if (childName && childName.trim()) {
+      whereClause += " AND c.full_name LIKE ?";
+      params.push(`%${childName.trim()}%`);
+    }
+    
+    console.log("Filtering notifications with:", { babysitterName, childName });
+    
+    // Get filtered notifications with child and reporter names
     const [notifications] = await db.query(`
       SELECT 
         ir.id,
@@ -240,9 +291,9 @@ router.get("/notifications", [auth, authorize("manager")], async (req, res) => {
       FROM incident_report ir
       LEFT JOIN children c ON ir.child_id = c.id
       LEFT JOIN babysitters b ON ir.reported_by = b.id
-      WHERE ir.target = 'manager'
+      ${whereClause}
       ORDER BY ir.status ASC, ir.created_at DESC
-    `);
+    `, params);
 
     console.log("Fetched notifications:", notifications);
 
@@ -284,17 +335,10 @@ router.get(
       console.log("Unread notifications count:", result[0].count);
       res.json({ count: result[0].count });
     } catch (error) {
-      console.error("Error fetching unread notifications count:", {
-        message: error.message,
-        sqlMessage: error.sqlMessage,
-        code: error.code,
-        sql: error.sql,
-        stack: error.stack,
-      });
+      console.error("Error fetching unread notifications count:", error);
       res.status(500).json({
         message: "Error fetching unread notifications count",
         error: error.message,
-        sqlMessage: error.sqlMessage,
       });
     }
   }

@@ -8,11 +8,16 @@ const auth = async (req, res, next) => {
 
     if (!token) {
       console.log("Auth middleware - No token provided");
-      throw new Error();
+      return res.status(401).json({ message: "No token provided" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("Auth middleware - Decoded token:", decoded);
+
+    if (!decoded.id || !decoded.role) {
+      console.log("Auth middleware - Invalid token structure");
+      return res.status(401).json({ message: "Invalid token structure" });
+    }
 
     // Check in both users and babysitters tables
     let [users] = await db.query(
@@ -31,16 +36,22 @@ const auth = async (req, res, next) => {
     let user;
     if (decoded.role === "manager") {
       user = users[0];
+      if (!user) {
+        console.log("Auth middleware - Manager not found in users table");
+        return res.status(401).json({ message: "Invalid manager account" });
+      }
     } else if (decoded.role === "babysitter") {
       user = babysitters[0];
+      if (!user) {
+        console.log("Auth middleware - Babysitter not found in babysitters table");
+        return res.status(401).json({ message: "Invalid babysitter account" });
+      }
+    } else {
+      console.log("Auth middleware - Invalid role in token:", decoded.role);
+      return res.status(401).json({ message: "Invalid role" });
     }
 
     console.log("Auth middleware - Selected user:", user);
-
-    if (!user) {
-      console.log("Auth middleware - No user found");
-      throw new Error();
-    }
 
     // Add role information to the user object
     user.role = decoded.role;
@@ -51,14 +62,29 @@ const auth = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Auth middleware - Error:", error);
-    res.status(401).json({ message: "Please authenticate." });
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    res.status(500).json({ message: "Authentication error" });
   }
 };
 
 const authorize = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Access denied" });
+      console.log(`Auth middleware - Access denied. Required roles: ${roles.join(', ')}, User role: ${req.user.role}`);
+      return res.status(403).json({ 
+        message: "Access denied",
+        requiredRoles: roles,
+        userRole: req.user.role
+      });
     }
     next();
   };

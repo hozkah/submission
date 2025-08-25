@@ -40,17 +40,16 @@ const authService = {
    * Login user with email and password
    * @param {string} email - User's email
    * @param {string} password - User's password
-   * @param {string} role - User's role (manager or babysitter)
    * @returns {Promise} - Promise with user data and token
    */
-  login: async (email, password, role) => {
+  login: async (email, password) => {
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();

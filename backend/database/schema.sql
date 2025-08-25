@@ -1,12 +1,12 @@
-CREATE DATABASE IF NOT EXISTS daystar_daycare;
-USE daystar_daycare;
+CREATE DATABASE IF NOT EXISTS daystar;
+USE daystar;
 -- drop DATABASE daystar_daycare;
 
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL,
   email VARCHAR(100) NOT NULL UNIQUE,
-  password VARCHAR(55) NOT NULL,
+  password VARCHAR(255) NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
   last_login DATETIME,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
